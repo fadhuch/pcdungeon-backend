@@ -14,6 +14,7 @@ exports.getProducts = async (req, res, next) => {
         const products = await productService.getProducts();
         res.json(products);
     } catch (err) {
+        console.error('Error fetching products:', err);
         next(err);
     }
 };
