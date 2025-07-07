@@ -1,0 +1,22 @@
+{
+  "name": "my-fullstack-app",
+  "version": "1.0.0",
+  "description": "A fullstack application with Node.js backend and Vue 3 frontend.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mongoose": "^8.16.1",
+    "puppeteer": "^24.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "author": "",
+  "license": "ISC"
+}
