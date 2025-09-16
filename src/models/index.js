@@ -1,14 +1,11 @@
-class Item {
-    constructor(name, description) {
-        this.name = name;
-        this.description = description;
-    }
+const Product = require('./product');
+const Supplier = require('./supplier');
+const Task = require('./task');
+const Member = require('./member');
 
-    validate() {
-        if (!this.name || !this.description) {
-            throw new Error("Name and description are required.");
-        }
-    }
-}
-
-module.exports = Item;
+module.exports = {
+    Product,
+    Supplier,
+    Task,
+    Member
+};

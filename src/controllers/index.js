@@ -1,8 +1,7 @@
-const IndexController = (req, res) => {
-    res.send('Hello from Index Controller!');
+const productController = require('./productController');
+const supplierController = require('./supplierController');
+
+module.exports = {
+    productController,
+    supplierController
 };
-
-exports.productController = require('./productController');
-exports.categoryController = require('./categoryController');
-
-module.exports = IndexController;
