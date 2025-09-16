@@ -20,15 +20,7 @@ const PORT = process.env.PORT || 4567;
 // Middleware
 // CORS configuration
 const corsOptions = {
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'https://onam.cartiquestore.com',
-        'https://www.onam.cartiquestore.com',
-        'https://alshiraa-frontend-vercel.vercel.app',
-        'https://alshiraa-frontend-vercel-*.vercel.app',
-        'https://admin.cartiquestore.com'
-    ],
+    origin: '*',
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
