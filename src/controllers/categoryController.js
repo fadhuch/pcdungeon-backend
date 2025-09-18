@@ -1,36 +1,6 @@
 const Category = require('../models/category');
 
 // Get all categories
-<<<<<<< HEAD
-exports.getCategories = async (req, res) => {
-  try {
-    const categories = await Category.find({ isActive: true })
-      .sort({ sortOrder: 1, name: 1 });
-    
-    res.status(200).json({
-      status: 'success',
-      results: categories.length,
-      data: { categories }
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
-};
-
-// Get category by ID
-exports.getCategory = async (req, res) => {
-  try {
-    const category = await Category.findById(req.params.id);
-    
-    if (!category) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Category not found'
-      });
-=======
 const getAllCategories = async (req, res) => {
     try {
         const categories = await Category.find().sort({ name: 1 });
@@ -69,7 +39,6 @@ const getCategoryById = async (req, res) => {
             status: 'error',
             message: error.message
         });
->>>>>>> eb325fe022e5165673bba4598ff70524d395f366
     }
     
     res.status(200).json({
@@ -85,38 +54,6 @@ const getCategoryById = async (req, res) => {
 };
 
 // Create new category
-<<<<<<< HEAD
-exports.createCategory = async (req, res) => {
-  try {
-    const category = await Category.create(req.body);
-    
-    res.status(201).json({
-      status: 'success',
-      data: { category }
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: 'error',
-      message: error.message
-    });
-  }
-};
-
-// Update category
-exports.updateCategory = async (req, res) => {
-  try {
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!category) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Category not found'
-      });
-=======
 const createCategory = async (req, res) => {
     try {
         const { name, color, description } = req.body;
@@ -208,7 +145,6 @@ const updateCategory = async (req, res) => {
             status: 'error',
             message: error.message
         });
->>>>>>> eb325fe022e5165673bba4598ff70524d395f366
     }
     
     res.status(200).json({
@@ -224,21 +160,6 @@ const updateCategory = async (req, res) => {
 };
 
 // Delete category
-<<<<<<< HEAD
-exports.deleteCategory = async (req, res) => {
-  try {
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
-    
-    if (!category) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Category not found'
-      });
-=======
 const deleteCategory = async (req, res) => {
     try {
         const category = await Category.findById(req.params.id);
@@ -272,7 +193,6 @@ const deleteCategory = async (req, res) => {
             status: 'error',
             message: error.message
         });
->>>>>>> eb325fe022e5165673bba4598ff70524d395f366
     }
     
     res.status(200).json({
