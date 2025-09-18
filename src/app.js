@@ -35,7 +35,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/images', express.static('images'));
 
 // MongoDB connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://fahad:Fahad%40123@cluster0.tri5xk7.mongodb.net/alshiraa';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://fahadfahadch:n0YgVBGmtPriBIYH@clustera.leznsi1.mongodb.net/pcdungeon';
 console.log('Connecting to MongoDB...');
 console.log('Environment:', process.env.NODE_ENV || 'development');
 
@@ -46,6 +46,7 @@ mongoose
         // Initialize default settings
         const Settings = require('./models/settings');
         Settings.initializeDefaults();
+       
     })
     .catch((err) => {
         console.error('MongoDB connection error:', err);
