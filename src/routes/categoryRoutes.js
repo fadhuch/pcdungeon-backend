@@ -6,7 +6,11 @@ const {
     createCategory,
     updateCategory,
     deleteCategory,
-    updateAllProductCounts
+    updateAllProductCounts,
+    addField,
+    updateField,
+    removeField,
+    getCategoryWithFields
 } = require('../controllers/categoryController');
 
 // Routes
@@ -18,8 +22,9 @@ router.delete('/:id', deleteCategory);
 router.post('/update-counts', updateAllProductCounts);
 
 // Field management routes
-router.post('/:id/fields', categoryController.addField);
-router.put('/:id/fields/:fieldId', categoryController.updateField);
-router.delete('/:id/fields/:fieldId', categoryController.removeField);
+router.post('/:id/fields', addField);
+router.put('/:id/fields/:fieldId', updateField);
+router.delete('/:id/fields/:fieldId', removeField);
+router.get('/:id/fields', getCategoryWithFields);
 
 module.exports = router;

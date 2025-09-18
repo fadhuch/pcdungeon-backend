@@ -40,17 +40,6 @@ const getCategoryById = async (req, res) => {
             message: error.message
         });
     }
-    
-    res.status(200).json({
-      status: 'success',
-      data: { category }
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
 };
 
 // Create new category
@@ -146,17 +135,6 @@ const updateCategory = async (req, res) => {
             message: error.message
         });
     }
-    
-    res.status(200).json({
-      status: 'success',
-      data: { category }
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: 'error',
-      message: error.message
-    });
-  }
 };
 
 // Delete category
@@ -194,21 +172,10 @@ const deleteCategory = async (req, res) => {
             message: error.message
         });
     }
-    
-    res.status(200).json({
-      status: 'success',
-      message: 'Category deleted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
 };
 
 // Add field to category
-exports.addField = async (req, res) => {
+const addField = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
     
@@ -239,7 +206,7 @@ exports.addField = async (req, res) => {
 };
 
 // Update field in category
-exports.updateField = async (req, res) => {
+const updateField = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
     
@@ -265,7 +232,7 @@ exports.updateField = async (req, res) => {
 };
 
 // Remove field from category
-exports.removeField = async (req, res) => {
+const removeField = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
     
@@ -291,7 +258,7 @@ exports.removeField = async (req, res) => {
 };
 
 // Get category with active fields only
-exports.getCategoryWithFields = async (req, res) => {
+const getCategoryWithFields = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
     
@@ -346,5 +313,9 @@ module.exports = {
     createCategory,
     updateCategory,
     deleteCategory,
-    updateAllProductCounts
+    updateAllProductCounts,
+    addField,
+    updateField,
+    removeField,
+    getCategoryWithFields
 };
