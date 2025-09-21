@@ -117,7 +117,6 @@ const updateCategory = async (req, res) => {
         }
 
         // Update product count
-        await category.updateProductCount();
 
         res.status(200).json({
             status: 'success',
@@ -283,11 +282,7 @@ const getCategoryWithFields = async (req, res) => {
 const updateAllProductCounts = async (req, res) => {
     try {
         const categories = await Category.find();
-        
-        for (const category of categories) {
-            await category.updateProductCount();
-        }
-
+       
         res.status(200).json({
             status: 'success',
             message: 'Product counts updated for all categories'
