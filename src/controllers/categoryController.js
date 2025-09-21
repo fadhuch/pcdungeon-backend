@@ -151,14 +151,7 @@ const deleteCategory = async (req, res) => {
 
         // Check if category is being used by products
         const Product = require('../models/product');
-        const productCount = await Product.countDocuments({ category: category.name });
-
-        if (productCount > 0) {
-            return res.status(400).json({
-                status: 'error',
-                message: `Cannot delete category. It is being used by ${productCount} product(s)`
-            });
-        }
+     
 
         await Category.findByIdAndDelete(req.params.id);
 

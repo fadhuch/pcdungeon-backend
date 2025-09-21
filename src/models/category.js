@@ -83,13 +83,4 @@ const categorySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Update product count when products are added/removed
-categorySchema.methods.updateProductCount = async function() {
-  const Product = mongoose.model('Product');
-  const count = await Product.countDocuments({ category: this.name });
-  this.productCount = count;
-  await this.save();
-  return this;
-};
-
 module.exports = mongoose.model('Category', categorySchema);
