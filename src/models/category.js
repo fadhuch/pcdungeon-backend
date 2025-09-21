@@ -75,6 +75,7 @@ const categorySchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  fields: [fieldSchema],
   productCount: {
     type: Number,
     default: 0
@@ -82,5 +83,40 @@ const categorySchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Method to add a field
+categorySchema.methods.addField = function(fieldData) {
+  this.fields.push(fieldData);
+  return this.save();
+};
+
+// Method to update a field
+categorySchema.methods.updateField = function(fieldId, updateData) {
+  const field = this.fields.id(fieldId);
+  if (!field) {
+    throw new Error('Field not found');
+  }
+  
+  Object.assign(field, updateData);
+  return this.save();
+};
+
+// Method to remove a field
+categorySchema.methods.removeField = function(fieldId) {
+  this.fields.pull(fieldId);
+  return this.save();
+};
+
+// Virtual for active fields
+categorySchema.virtual('activeFields').get(function() {
+  return this.fields.filter(field => field.isActive);
+});
+
+// Method to update product count
+categorySchema.methods.updateProductCount = async function() {
+  const Product = require('./product');
+  this.productCount = await Product.countDocuments({ category: this.name });
+  return this.save();
+};
 
 module.exports = mongoose.model('Category', categorySchema);

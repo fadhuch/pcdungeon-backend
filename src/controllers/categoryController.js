@@ -86,7 +86,7 @@ const createCategory = async (req, res) => {
 // Update category
 const updateCategory = async (req, res) => {
     try {
-        const { name, color, description } = req.body;
+        const { name, color, description, fields } = req.body;
 
         // Check if another category has the same name
         if (name) {
@@ -103,12 +103,22 @@ const updateCategory = async (req, res) => {
             }
         }
 
+        console.log(fields, 'fields');
+        
+        // First update basic category info
+        const updateData = { name, color, description };
+        if (fields) {
+            updateData.fields = fields;
+        }
+
         const category = await Category.findByIdAndUpdate(
             req.params.id,
-            { name, color, description },
+            updateData,
             { new: true, runValidators: true }
         );
-
+        
+        console.log(category, 'category');
+        
         if (!category) {
             return res.status(404).json({
                 status: 'error',
@@ -116,13 +126,12 @@ const updateCategory = async (req, res) => {
             });
         }
 
-        // Update product count
-
         res.status(200).json({
             status: 'success',
             data: category
         });
     } catch (error) {
+        console.error('Update category error:', error);
         if (error.code === 11000) {
             return res.status(400).json({
                 status: 'error',
