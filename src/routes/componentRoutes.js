@@ -8,6 +8,12 @@ router.get('/dashboard-stats', componentController.getDashboardStats);
 // Product page specific route
 router.get('/products', componentController.getProductsPage);
 
+// CSV template download route
+router.get('/template/:categoryId', componentController.downloadTemplate);
+
+// Bulk import route
+router.post('/bulk-import', componentController.bulkImport);
+
 // Component CRUD routes
 router.get('/', componentController.getComponents);
 router.get('/:id', componentController.getComponent);

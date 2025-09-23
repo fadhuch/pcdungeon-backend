@@ -2,6 +2,10 @@ const Component = require('../models/component');
 const Category = require('../models/category');
 const User = require('../models/user');
 const UserBuild = require('../models/userBuild');
+const multer = require('multer');
+const csv = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
 
 // Get all components with filtering and pagination
 exports.getComponents = async (req, res) => {
@@ -486,6 +490,332 @@ exports.getProductsPage = async (req, res) => {
       },
       data: { products }
     });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `bulk-import-${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// Bulk import components from CSV
+exports.bulkImport = [
+  upload.single('csvFile'),
+  async (req, res) => {
+    try {
+      const { categoryId } = req.body;
+      
+      if (!categoryId) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Category ID is required'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'CSV file is required'
+        });
+      }
+
+      // Verify category exists
+      const category = await Category.findById(categoryId);
+      if (!category) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Category not found'
+        });
+      }
+
+      const results = [];
+      const errors = [];
+      let rowNumber = 1;
+
+      // Parse CSV file
+      const csvData = [];
+      
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(req.file.path)
+          .pipe(csv())
+          .on('data', (data) => {
+            csvData.push(data);
+          })
+          .on('end', resolve)
+          .on('error', reject);
+      });
+
+      // Process each row
+      for (const row of csvData) {
+        rowNumber++;
+        
+        try {
+          // Map CSV columns to component fields
+          const componentData = {
+            name: row.name || row.Name || row.NAME,
+            category: categoryId,
+            brand: row.brand || row.Brand || row.BRAND,
+            model: row.model || row.Model || row.MODEL,
+            description: row.description || row.Description || row.DESCRIPTION,
+            price: {
+              amount: parseFloat(row.legacy_price_amount || row.price || row.Price || row.PRICE || 0),
+              currency: row.currency || row.Currency || row.CURRENCY || 'AED'
+            },
+            pricing: {
+              cost: {
+                amount: parseFloat(row.cost_amount || row.cost || row.Cost || row.COST || 0),
+                currency: row.currency || 'AED'
+              },
+              individualPrice: {
+                amount: parseFloat(row.individual_price_amount || row.individualPrice || row['individual_price'] || 0),
+                currency: row.currency || 'AED'
+              },
+              buildPrice: {
+                amount: parseFloat(row.build_price_amount || row.buildPrice || row['build_price'] || 0),
+                currency: row.currency || 'AED'
+              }
+            },
+            availability: {
+              inStock: row.in_stock === 'true' || row.in_stock === '1' || row.in_stock === 'yes' || 
+                       row.inStock === 'true' || row.inStock === '1' || row.inStock === 'yes',
+              quantity: parseInt(row.stock_count || row.quantity || row.Quantity || row.QUANTITY || 0),
+              reserved: parseInt(row.reserved || row.Reserved || row.RESERVED || 0)
+            },
+            stockStatus: row.stockStatus || row['stock_status'] || 'in-stock',
+            isActive: row.isActive !== 'false' && row.isActive !== '0' && row.isActive !== 'no'
+          };
+
+          // Handle specifications - look for spec_ prefixed columns
+          const specifications = {};
+          Object.keys(row).forEach(key => {
+            if (key.startsWith('spec_')) {
+              // Remove spec_ prefix and convert to proper field name
+              const fieldName = key.replace('spec_', '').replace(/_/g, ' ');
+              specifications[fieldName] = row[key];
+            } else if (!['name', 'brand', 'model', 'description', 'cost_amount', 'individual_price_amount', 'build_price_amount', 'legacy_price_amount', 'stock_count', 'in_stock', 'currency', 'stockStatus', 'isActive'].includes(key.toLowerCase())) {
+              // Handle any other columns not in standard headers
+              specifications[key] = row[key];
+            }
+          });
+          
+          if (Object.keys(specifications).length > 0) {
+            componentData.specifications = specifications;
+          }
+
+          // Validate required fields
+          if (!componentData.name) {
+            errors.push({
+              row: rowNumber,
+              message: 'Component name is required'
+            });
+            continue;
+          }
+
+          // Create component
+          const component = await Component.create(componentData);
+          results.push({
+            row: rowNumber,
+            component: {
+              id: component._id,
+              name: component.name,
+              brand: component.brand,
+              model: component.model
+            }
+          });
+
+        } catch (error) {
+          errors.push({
+            row: rowNumber,
+            message: error.message
+          });
+        }
+      }
+
+      // Clean up uploaded file
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file:', cleanupError);
+      }
+
+
+      res.status(200).json({
+        status: 'success',
+        message: `Bulk import completed. ${results.length} components imported successfully.`,
+        data: {
+          imported: results.length,
+          errors: errors.length,
+          results: results,
+          errors: errors
+        }
+      });
+
+    } catch (error) {
+      // Clean up uploaded file in case of error
+      if (req.file && req.file.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupError) {
+          console.error('Error cleaning up file:', cleanupError);
+        }
+      }
+
+      res.status(500).json({
+        status: 'error',
+        message: error.message
+      });
+    }
+  }
+];
+
+// Download CSV template for bulk import
+exports.downloadTemplate = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    
+    if (!categoryId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Category ID is required'
+      });
+    }
+
+    // Verify category exists and get its fields
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Category not found'
+      });
+    }
+
+    // Standard headers
+    const standardHeaders = [
+      'name',
+      'description',
+      'cost_amount',
+      'individual_price_amount', 
+      'build_price_amount',
+      'legacy_price_amount',
+      'stock_count',
+      'in_stock',
+      'brand',
+      'model'
+    ];
+
+    // Dynamic specification headers from category fields
+    const specHeaders = [];
+    if (category.fields && category.fields.length > 0) {
+      category.fields.forEach(field => {
+        if (field.isActive !== false) {
+          // Convert field name to spec_ prefixed header
+          const headerName = `spec_${field.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+          specHeaders.push(headerName);
+        }
+      });
+    }
+
+    // Combine all headers
+    const allHeaders = [...standardHeaders, ...specHeaders];
+
+    // Create example row with sample data
+    const exampleRow = {
+      name: `Sample ${category.name} Component`,
+      description: `High-quality ${category.name.toLowerCase()} component with excellent performance`,
+      cost_amount: '150.00',
+      individual_price_amount: '200.00',
+      build_price_amount: '180.00',
+      legacy_price_amount: '200.00',
+      stock_count: '25',
+      in_stock: 'true',
+      brand: 'Sample Brand',
+      model: 'Model XYZ-123'
+    };
+
+    // Add sample data for specification fields
+    if (category.fields && category.fields.length > 0) {
+      category.fields.forEach(field => {
+        if (field.isActive !== false) {
+          const headerName = `spec_${field.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+          
+          // Generate sample data based on field type
+          switch (field.type) {
+            case 'number':
+              exampleRow[headerName] = '100';
+              break;
+            case 'select':
+              if (field.options && field.options.length > 0) {
+                exampleRow[headerName] = field.options[0].value || field.options[0].label || 'Option 1';
+              } else {
+                exampleRow[headerName] = 'Sample Option';
+              }
+              break;
+            case 'boolean':
+              exampleRow[headerName] = 'true';
+              break;
+            case 'text':
+            default:
+              exampleRow[headerName] = `Sample ${field.label || field.name}`;
+              break;
+          }
+        }
+      });
+    }
+
+    // Generate CSV content
+    const csvContent = [
+      // Header row
+      allHeaders.join(','),
+      // Example row
+      allHeaders.map(header => {
+        const value = exampleRow[header] || '';
+        // Escape values containing commas or quotes
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',')
+    ].join('\n');
+
+    // Set response headers for file download
+    const fileName = `components_template_${category.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.csv`;
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Pragma', 'no-cache');
+
+    // Send CSV content
+    res.status(200).send(csvContent);
+
   } catch (error) {
     res.status(500).json({
       status: 'error',
